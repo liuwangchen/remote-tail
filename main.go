@@ -179,8 +179,8 @@ func getWelcomeMessage() string {
 |  _ <  __/ | | | | | (_) | ||  __/| | (_| | | |
 |_| \_\___|_| |_| |_|\___/ \__\___||_|\__,_|_|_|
 
-Author: mylxsw
-Homepage: github.com/mylxsw/remote-tail
+Author: liuwangchen
+Homepage: github.com/liuwangchen/remote-tail
 Version: ` + Version + "(" + GitCommit + ")" + `
 `
 }

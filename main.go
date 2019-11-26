@@ -133,6 +133,18 @@ func main() {
 				server.TailFlags = config.TailFlags
 			}
 
+			if server.User == "" {
+				server.User = config.User
+			}
+
+			if server.Password == "" {
+				server.Password = config.Password
+			}
+
+			if server.PrivateKeyPath == "" {
+				server.PrivateKeyPath = config.PrivateKeyPath
+			}
+
 			// If the service configuration does not have a port, the default value of 22 is used
 			if server.Port == 0 {
 				server.Port = 22

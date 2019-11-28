@@ -16,11 +16,10 @@ var mossSep = ".--. --- .-- . .-. . -..   -... -.--   -- -.-- .-.. -..- ... .-- 
 
 var welcomeMessage = getWelcomeMessage() + console.ColorfulText(console.TextMagenta, mossSep)
 
-var configFile = flag.String("conf", "/Users/liuwangchen/work/bash/remotetail/live.conf", "-conf=example.conf")
-var label = flag.String("label", "", "-label=test")
+var configFile = flag.String("f", "", "this is config file -f=example.yaml")
+var label = flag.String("l", "", "this is label -l=test")
 
-var Version = ""
-var GitCommit = ""
+var Version = "2.0"
 
 func usageAndExit(message string) {
 
@@ -121,7 +120,6 @@ func getWelcomeMessage() string {
 |_| \_\___|_| |_| |_|\___/ \__\___||_|\__,_|_|_|
 
 Author: liuwangchen
-Homepage: github.com/liuwangchen/remote-tail
-Version: ` + Version + "(" + GitCommit + ")" + `
+Version: ` + Version + `
 `
 }

@@ -3,13 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"github.com/spf13/viper"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/BurntSushi/toml"
 	"github.com/mylxsw/remote-tail/command"
 	"github.com/mylxsw/remote-tail/console"
 )
@@ -18,11 +16,8 @@ var mossSep = ".--. --- .-- . .-. . -..   -... -.--   -- -.-- .-.. -..- ... .-- 
 
 var welcomeMessage = getWelcomeMessage() + console.ColorfulText(console.TextMagenta, mossSep)
 
-var filePath = flag.String("file", "", "-file=\"/var/log/*.log\"")
-var hostStr = flag.String("hosts", "", "-hosts=root@192.168.1.101,root@192.168.1.102")
-var configFile = flag.String("conf", "", "-conf=example.toml")
-var tailFlags = flag.String("tail-flags", "--retry --follow=name", "flags for tail command, you can use -f instead if your server does't support `--retry --follow=name` flags")
-var slient = flag.Bool("slient", false, "-slient=false")
+var configFile = flag.String("conf", "/Users/liuwangchen/work/bash/remotetail/live.conf", "-conf=example.conf")
+var label = flag.String("label", "", "-label=test")
 
 var Version = ""
 var GitCommit = ""
@@ -30,91 +25,50 @@ var GitCommit = ""
 func usageAndExit(message string) {
 
 	if message != "" {
-		fmt.Fprintln(os.Stderr, message)
+		_, _ = fmt.Fprintln(os.Stderr, message)
 	}
 
 	flag.Usage()
-	fmt.Fprint(os.Stderr, "\n")
+	_, _ = fmt.Fprint(os.Stderr, "\n")
 
 	os.Exit(1)
 }
 
-func printWelcomeMessage(config command.Config) {
+func printWelcomeMessage() {
 	fmt.Println(welcomeMessage)
 
-	for _, server := range config.Servers {
-		// If there is no tail_file for a service configuration, the global configuration is used
-		if server.TailFile == "" {
-			server.TailFile = config.TailFile
-		}
-
-		serverInfo := fmt.Sprintf("%s@%s:%s", server.User, server.Hostname, server.TailFile)
+	for _, server := range viper.GetStringSlice(*label) {
+		serverInfo := fmt.Sprintf("%s@%s:%s", viper.GetString("user"), server, viper.GetString("tail_file"))
 		fmt.Println(console.ColorfulText(console.TextMagenta, serverInfo))
 	}
 	fmt.Printf("\n%s\n", console.ColorfulText(console.TextCyan, mossSep))
 }
 
-func parseConfig(filePath string, hostStr string, configFile string, slient bool, tailFlags string) (config command.Config) {
-	if configFile != "" {
-		if _, err := toml.DecodeFile(configFile, &config); err != nil {
-			log.Fatal(err)
-		}
-
-	} else {
-
-		hosts := strings.Split(hostStr, ",")
-
-		config = command.Config{}
-		config.TailFile = filePath
-		config.Servers = make(map[string]command.Server, len(hosts))
-		config.Slient = slient
-		config.TailFlags = tailFlags
-
-		for index, hostname := range hosts {
-			hostInfo := strings.Split(strings.Replace(hostname, ":", "@", -1), "@")
-			var port int
-			if len(hostInfo) > 2 {
-				port, _ = strconv.Atoi(hostInfo[2])
-			}
-			config.Servers["server_"+string(index)] = command.Server{
-				ServerName: "server_" + string(index),
-				Hostname:   hostInfo[1],
-				User:       hostInfo[0],
-				Port:       port,
-			}
-		}
-	}
-
-	if config.TailFlags == "" {
-		config.TailFlags = "--retry --follow=name"
-	}
-
-	return
-}
-
 func main() {
 
 	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, welcomeMessage)
-		fmt.Fprint(os.Stderr, "Options:\n\n")
+		_, _ = fmt.Fprint(os.Stderr, welcomeMessage)
+		_, _ = fmt.Fprint(os.Stderr, "Options:\n\n")
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
-	if (*filePath == "" || *hostStr == "") && *configFile == "" {
+	if *configFile == "" || *label == "" {
 		usageAndExit("")
 	}
-
-	config := parseConfig(*filePath, *hostStr, *configFile, *slient, *tailFlags)
-	if !config.Slient {
-		printWelcomeMessage(config)
+	viper.SetConfigFile(*configFile)
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
 	}
+
+	printWelcomeMessage()
 
 	outputs := make(chan command.Message, 255)
 	var wg sync.WaitGroup
 
-	for _, server := range config.Servers {
+	for _, server := range viper.GetStringSlice(*label) {
 		wg.Add(1)
 		go func(server command.Server) {
 			defer func() {
@@ -123,39 +77,19 @@ func main() {
 				}
 			}()
 			defer wg.Done()
-
-			// If there is no tail_file for a service configuration, the global configuration is used
-			if server.TailFile == "" {
-				server.TailFile = config.TailFile
-			}
-
-			if server.TailFlags == "" {
-				server.TailFlags = config.TailFlags
-			}
-
-			if server.User == "" {
-				server.User = config.User
-			}
-
-			if server.Password == "" {
-				server.Password = config.Password
-			}
-
-			if server.PrivateKeyPath == "" {
-				server.PrivateKeyPath = config.PrivateKeyPath
-			}
-
-			// If the service configuration does not have a port, the default value of 22 is used
-			if server.Port == 0 {
-				server.Port = 22
-			}
-
 			cmd := command.NewCommand(server)
 			cmd.Execute(outputs)
-		}(server)
+		}(command.Server{
+			ServerName:     "",
+			Hostname:       server,
+			Port:           22,
+			User:           viper.GetString("user"),
+			Password:       viper.GetString("password"),
+			PrivateKeyPath: viper.GetString("private_key_path"),
+			TailFile:       viper.GetString("tail_file"),
+		})
 	}
-
-	if len(config.Servers) > 0 {
+	if len(viper.GetStringSlice(*label)) > 0 {
 		go func() {
 			for output := range outputs {
 				content := strings.Trim(output.Content, "\r\n")
@@ -164,22 +98,17 @@ func main() {
 					continue
 				}
 
-				if config.Slient {
-					fmt.Printf("%s -> %s\n", output.Host, content)
-				} else {
-					fmt.Printf(
-						"%s %s %s\n",
-						console.ColorfulText(console.TextGreen, output.Host),
-						console.ColorfulText(console.TextYellow, "->"),
-						content,
-					)
-				}
+				fmt.Printf(
+					"%s %s %s\n",
+					console.ColorfulText(console.TextGreen, output.Host),
+					console.ColorfulText(console.TextYellow, "->"),
+					content,
+				)
 			}
 		}()
 	} else {
 		fmt.Println(console.ColorfulText(console.TextRed, "No target host is available"))
 	}
-
 	wg.Wait()
 }
 

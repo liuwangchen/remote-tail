@@ -17,7 +17,7 @@ var mossSep = ".--. --- .-- . .-. . -..   -... -.--   -- -.-- .-.. -..- ... .-- 
 var welcomeMessage = getWelcomeMessage() + console.ColorfulText(console.TextMagenta, mossSep)
 
 var configFile = flag.String("f", "", "this is config file -f=example.yaml")
-var label = flag.String("l", "", "this is label -l=test")
+var label = flag.String("l", "test", "this is label -l=test")
 
 var Version = "2.0"
 

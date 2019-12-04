@@ -3,12 +3,9 @@ package command
 import (
 	"bufio"
 	"fmt"
-	"io"
-	"strconv"
-	"strings"
-
 	"github.com/mylxsw/remote-tail/console"
 	"github.com/mylxsw/remote-tail/ssh"
+	"io"
 )
 
 type Command struct {
@@ -35,9 +32,9 @@ func NewCommand(server Server) (cmd *Command) {
 		Server: server,
 	}
 
-	if !strings.Contains(cmd.Host, ":") {
-		cmd.Host = cmd.Host + ":" + strconv.Itoa(server.Port)
-	}
+	//if !strings.Contains(cmd.Host, ":") {
+	//	cmd.Host = cmd.Host + ":" + strconv.Itoa(server.Port)
+	//}
 
 	return
 }
@@ -46,7 +43,7 @@ func NewCommand(server Server) (cmd *Command) {
 func (cmd *Command) Execute(output chan Message) {
 
 	client := &ssh.Client{
-		Host:           cmd.Host,
+		Host:           cmd.Host + ":22",
 		User:           cmd.User,
 		Password:       cmd.Server.Password,
 		PrivateKeyPath: cmd.Server.PrivateKeyPath,

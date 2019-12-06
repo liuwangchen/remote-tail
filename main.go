@@ -39,7 +39,7 @@ func printWelcomeMessage() {
 	fmt.Println(welcomeMessage)
 
 	for _, server := range viper.GetStringSlice(label) {
-		serverInfo := fmt.Sprintf("%s@%s:%s", viper.GetString("user"), server, viper.GetString("tail."+file))
+		serverInfo := fmt.Sprintf("%s@%s:%s", viper.GetString("user"), server, viper.GetString("file."+file))
 		fmt.Println(console.ColorfulText(console.TextMagenta, serverInfo))
 	}
 	fmt.Printf("\n%s\n", console.ColorfulText(console.TextCyan, mossSep))
@@ -54,12 +54,13 @@ func main() {
 	}
 	flag.Parse()
 	args := flag.Args()
-	if len(args) < 3 {
+	if len(args) < 2 {
 		usageAndExit("")
 	}
 	configFile = args[0]
-	label = args[1]
-	file = args[2]
+	subArgs := args[1]
+	label = strings.Split(subArgs, ".")[0]
+	file = strings.Split(subArgs, ".")[1]
 	viper.SetConfigFile(configFile)
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -89,7 +90,7 @@ func main() {
 			User:           viper.GetString("user"),
 			Password:       viper.GetString("password"),
 			PrivateKeyPath: viper.GetString("private_key_path"),
-			TailFile:       viper.GetString("tail." + file),
+			TailFile:       viper.GetString("file." + file),
 		})
 	}
 	if len(viper.GetStringSlice(label)) > 0 {

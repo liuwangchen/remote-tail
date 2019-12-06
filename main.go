@@ -16,8 +16,9 @@ var mossSep = ".--. --- .-- . .-. . -..   -... -.--   -- -.-- .-.. -..- ... .-- 
 
 var welcomeMessage = getWelcomeMessage() + console.ColorfulText(console.TextMagenta, mossSep)
 
-var configFile = flag.String("f", "", "this is config file -f=example.yaml")
-var label = flag.String("l", "test", "this is label -l=test")
+var configFile string
+var label string
+var file string
 
 var Version = "2.0"
 
@@ -28,6 +29,7 @@ func usageAndExit(message string) {
 	}
 
 	flag.Usage()
+	fmt.Println("remote-tail config label file")
 	_, _ = fmt.Fprint(os.Stderr, "\n")
 
 	os.Exit(1)
@@ -36,8 +38,8 @@ func usageAndExit(message string) {
 func printWelcomeMessage() {
 	fmt.Println(welcomeMessage)
 
-	for _, server := range viper.GetStringSlice(*label) {
-		serverInfo := fmt.Sprintf("%s@%s:%s", viper.GetString("user"), server, viper.GetString("tail_file"))
+	for _, server := range viper.GetStringSlice(label) {
+		serverInfo := fmt.Sprintf("%s@%s:%s", viper.GetString("user"), server, viper.GetString("tail."+file))
 		fmt.Println(console.ColorfulText(console.TextMagenta, serverInfo))
 	}
 	fmt.Printf("\n%s\n", console.ColorfulText(console.TextCyan, mossSep))
@@ -50,13 +52,15 @@ func main() {
 		_, _ = fmt.Fprint(os.Stderr, "Options:\n\n")
 		flag.PrintDefaults()
 	}
-
 	flag.Parse()
-
-	if *configFile == "" || *label == "" {
+	args := flag.Args()
+	if len(args) < 3 {
 		usageAndExit("")
 	}
-	viper.SetConfigFile(*configFile)
+	configFile = args[0]
+	label = args[1]
+	file = args[2]
+	viper.SetConfigFile(configFile)
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
@@ -67,7 +71,7 @@ func main() {
 	outputs := make(chan command.Message, 255)
 	var wg sync.WaitGroup
 
-	for _, server := range viper.GetStringSlice(*label) {
+	for _, server := range viper.GetStringSlice(label) {
 		wg.Add(1)
 		go func(server command.Server) {
 			defer func() {
@@ -85,10 +89,10 @@ func main() {
 			User:           viper.GetString("user"),
 			Password:       viper.GetString("password"),
 			PrivateKeyPath: viper.GetString("private_key_path"),
-			TailFile:       viper.GetString("tail_file"),
+			TailFile:       viper.GetString("tail." + file),
 		})
 	}
-	if len(viper.GetStringSlice(*label)) > 0 {
+	if len(viper.GetStringSlice(label)) > 0 {
 		go func() {
 			for output := range outputs {
 				content := strings.Trim(output.Content, "\r\n")

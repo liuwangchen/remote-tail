@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -16,6 +17,7 @@ var mossSep = ".--. --- .-- . .-. . -..   -... -.--   -- -.-- .-.. -..- ... .-- 
 
 var welcomeMessage = getWelcomeMessage() + console.ColorfulText(console.TextMagenta, mossSep)
 
+var env string
 var configFile string
 var label string
 var file string
@@ -54,13 +56,15 @@ func main() {
 	}
 	flag.Parse()
 	args := flag.Args()
-	if len(args) < 2 {
+	if len(args) < 1 {
 		usageAndExit("")
 	}
-	configFile = args[0]
-	subArgs := args[1]
-	label = strings.Split(subArgs, ".")[0]
-	file = strings.Split(subArgs, ".")[1]
+	subArgs := args[0]
+	env = strings.Split(subArgs, ".")[0]
+	label = strings.Split(subArgs, ".")[1]
+	file = strings.Split(subArgs, ".")[2]
+	homeDir, _ := os.UserHomeDir()
+	configFile = filepath.Join(homeDir, ".remote", fmt.Sprintf("%s.yaml", env))
 	viper.SetConfigFile(configFile)
 	err := viper.ReadInConfig()
 	if err != nil {

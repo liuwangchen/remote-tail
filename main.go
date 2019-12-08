@@ -22,7 +22,7 @@ var configFile string
 var label string
 var file string
 
-var Version = "2.0"
+var Version = "3.0"
 
 func usageAndExit(message string) {
 

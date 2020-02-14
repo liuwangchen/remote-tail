@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/spf13/viper"
 
 	"github.com/mylxsw/remote-tail/command"
 	"github.com/mylxsw/remote-tail/console"
@@ -21,6 +22,7 @@ var env string
 var configFile string
 var label string
 var file string
+var tailLine *int
 
 var Version = "3.0"
 
@@ -54,6 +56,7 @@ func main() {
 		_, _ = fmt.Fprint(os.Stderr, "Options:\n\n")
 		flag.PrintDefaults()
 	}
+	tailLine = flag.Int("n", 0, "-n 1000")
 	flag.Parse()
 	args := flag.Args()
 	if len(args) < 1 {
@@ -95,6 +98,7 @@ func main() {
 			Password:       viper.GetString("password"),
 			PrivateKeyPath: viper.GetString("private_key_path"),
 			TailFile:       viper.GetString("file." + file),
+			TailLine:       *tailLine,
 		})
 	}
 	if len(viper.GetStringSlice(label)) > 0 {

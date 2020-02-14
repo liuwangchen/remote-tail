@@ -8,5 +8,5 @@ type Server struct {
 	Password       string `toml:"password"`
 	PrivateKeyPath string `toml:"private_key_path"`
 	TailFile       string `toml:"tail_file"`
+	TailLine       int
 }
-

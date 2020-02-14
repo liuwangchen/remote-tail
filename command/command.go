@@ -3,9 +3,10 @@ package command
 import (
 	"bufio"
 	"fmt"
+	"io"
+
 	"github.com/mylxsw/remote-tail/console"
 	"github.com/mylxsw/remote-tail/ssh"
-	"io"
 )
 
 type Command struct {
@@ -25,10 +26,14 @@ type Message struct {
 
 // NewCommand Create a new command
 func NewCommand(server Server) (cmd *Command) {
+	script := fmt.Sprintf("tail -f %s", server.TailFile)
+	if server.TailLine > 0 {
+		script = fmt.Sprintf("tail -n %d %s", server.TailLine, server.TailFile)
+	}
 	cmd = &Command{
 		Host:   server.Hostname,
 		User:   server.User,
-		Script: fmt.Sprintf("tail -f %s", server.TailFile),
+		Script: script,
 		Server: server,
 	}
 

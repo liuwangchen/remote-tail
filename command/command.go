@@ -74,13 +74,7 @@ func (cmd *Command) Execute(output chan Message) {
 		panic(fmt.Sprintf("[%s] redirect stdout failed: %s", cmd.Host, err))
 	}
 
-	cmd.Stderr, err = session.StderrPipe()
-	if err != nil {
-		panic(fmt.Sprintf("[%s] redirect stderr failed: %s", cmd.Host, err))
-	}
-
 	go bindOutput(cmd.Host, output, &cmd.Stdout, "", 0)
-	go bindOutput(cmd.Host, output, &cmd.Stderr, "Error:", console.TextRed)
 
 	if err = session.Start(cmd.Script); err != nil {
 		panic(fmt.Sprintf("[%s] failed to execute command: %s", cmd.Host, err))
@@ -95,22 +89,23 @@ func (cmd *Command) Execute(output chan Message) {
 func bindOutput(host string, output chan Message, input *io.Reader, prefix string, color int) {
 	reader := bufio.NewReader(*input)
 	for {
-		line, err := reader.ReadString('\n')
+		line, _, err := reader.ReadLine()
 		if err != nil || io.EOF == err {
 			if err != io.EOF {
 				panic(fmt.Sprintf("[%s] faield to execute command: %s", host, err))
 			}
+			close(output)
 			break
 		}
-
-		line = prefix + line
+		lineStr := string(line)
+		lineStr = prefix + lineStr
 		if color != 0 {
-			line = console.ColorfulText(color, line)
+			lineStr = console.ColorfulText(color, lineStr)
 		}
 
 		output <- Message{
 			Host:    host,
-			Content: line,
+			Content: lineStr,
 		}
 	}
 }

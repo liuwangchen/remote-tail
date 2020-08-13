@@ -77,6 +77,7 @@ func main() {
 	printWelcomeMessage()
 
 	outputs := make(chan command.Message, 255)
+	done := make(chan struct{})
 	var wg sync.WaitGroup
 
 	for _, server := range viper.GetStringSlice(label) {
@@ -117,11 +118,13 @@ func main() {
 					content,
 				)
 			}
+			done <- struct{}{}
 		}()
 	} else {
 		fmt.Println(console.ColorfulText(console.TextRed, "No target host is available"))
 	}
 	wg.Wait()
+	<-done
 }
 
 func getWelcomeMessage() string {
